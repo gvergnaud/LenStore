@@ -1,0 +1,16 @@
+{
+  "name": "LenStore",
+  "version": "0.1.0",
+  "description": "External state implemented with lenses !",
+  "main": "src/index.js",
+  "author": "Gabriel Vergnaud",
+  "license": "ISC",
+  "scripts": {
+    "start": "babel-node test/flux.js"
+  },
+  "dependencies": {
+    "deep-equal": "^1.0.1",
+    "ramda": "^0.19.1"
+  },
+  "devDependencies": {}
+}
