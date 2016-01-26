@@ -1,4 +1,4 @@
-# LenStore
+# LenStore (WIP)
 
 External state implemented with lenses !
 
