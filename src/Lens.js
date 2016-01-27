@@ -10,11 +10,12 @@ import Identity, { runIdentity } from './functors/Identity'
 // Getter :: (Key, Object) -> a
 // Setter :: (Key, a, Object) -> Object
 
-// lens :: Getter -> Setter -> Key -> (a -> b) -> Object
+// lens :: Getter -> Setter -> Key -> Functor f -> Object
 export const lens = curry((getter, setter, key, f, obj) =>
-  map(value => setter(key, value, obj), f(getter(key, obj)))
+  f(getter(key, obj)).map(value => setter(key, value, obj))
 )
 
+// identityLens :: Functor f -> a -> f a
 export const identityLens = lens(
   (key, obj) => obj,
   (key, value, obj) => obj,
@@ -40,6 +41,8 @@ export const num = lens(
   (index, value, arr) => [ ...arr.split(0, index), value, ...arr.split(index + 1) ]
 )
 
+// mapped :: Functor f -> Setter (f a) (f b) a b
+export const mapped = curry((f, x) => Identity.of(map(compose(runIdentity, f), x)))
 
 /* ----------------------------------------- *
         The 3 methods
@@ -61,4 +64,4 @@ export const set = curry((lens, v, x) => over(lens, () => v, x))
 export const makeLenses = (...keys) => keys.reduce((acc, key) => ({
   ...acc,
 	[key]: propLens(key)
-}), { num })
+}), { num, mapped })
