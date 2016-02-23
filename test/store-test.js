@@ -70,13 +70,13 @@ describe('L', () => {
 
 
   it('should be a tree of lenses that represent the initial state', () => {
-    expect(L.self).toBeA(Function)
-    expect(L.user).toBeA(Function)
-    expect(L.user.L.name).toBeA(Function)
-    expect(L.user.L.name.L.last).toBeA(Function)
-    expect(L.user.L.name.L.first).toBeA(Function)
-    expect(L.user.L.friends.num(0).L.name).toBeA(Function)
-    expect(L.user.L.friends.num(0).L.name.L.first).toBeA(Function)
+    expect(L.lens).toBeA(Function)
+    expect(L.user.lens).toBeA(Function)
+    expect(L.user.name.lens).toBeA(Function)
+    expect(L.user.name.last.lens).toBeA(Function)
+    expect(L.user.name.first.lens).toBeA(Function)
+    expect(L.user.friends.num(0).name.lens).toBeA(Function)
+    expect(L.user.friends.num(0).name.first.lens).toBeA(Function)
   })
 
 })
@@ -88,12 +88,13 @@ describe('view', () => {
 
 
   it('should show the full state with L.self lens', () => {
-    expect(view(L.self)).toEqual(state)
+    expect(view(L)).toEqual(state)
     expect(view()).toEqual(state)
   })
 
   it('should show the part of the data structure a lens targets', () => {
-    expect(view(L.user.L.name)).toEqual({
+
+    expect(view(L.user.name)).toEqual({
       first: 'Gabriel',
       last: 'Vergnaud'
     })
@@ -108,7 +109,7 @@ describe('set', () => {
 
   it('should give back the the focus rootState when called', () => {
 
-    expect(set(L.user.L.name.L.last, 'Bowie')).toEqual({
+    expect(set(L.user.name.last, 'Bowie')).toEqual({
       ...state,
       user: {
         ...state.user,
@@ -130,7 +131,7 @@ describe('over', () => {
 
   it('should give back the focus rootState when called', () => {
 
-    expect(over(L.user.L.name.L.last, (lastname) => `c'est ${lastname}`)).toEqual({
+    expect(over(L.user.name.last, (lastname) => `c'est ${lastname}`)).toEqual({
       ...state,
       user: {
         ...state.user,
@@ -146,7 +147,7 @@ describe('over', () => {
 })
 
 
-describe('Focus', () => {
+describe('Focus View', () => {
 
   const { subscribe, L, view, over, set, focus } = createStore(state)
 
@@ -191,13 +192,23 @@ describe('Focus', () => {
     expect(view(L.user)).toEqual(state.user)
     expect(userFocus.view()).toEqual(state.user)
 
-    expect(view(L.user.L.name)).toEqual(state.user.name)
+    expect(view(L.user.name)).toEqual(state.user.name)
     expect(userNameFocus.view()).toEqual(state.user.name)
 
-    expect(view(L.user.L.name.L.first)).toEqual(state.user.name.first)
+    expect(view(L.user.name.first)).toEqual(state.user.name.first)
     expect(userFirstNameFocus.view()).toEqual(state.user.name.first)
   })
 
+})
+
+
+describe('Focus Set', () => {
+
+  const { subscribe, L, view, over, set, focus } = createStore(state)
+
+  const userFocus = focus(L.user)
+  const userNameFocus = userFocus.focus(userFocus.L.name)
+  const userFirstNameFocus = userNameFocus.focus(userNameFocus.L.first)
 
   it('Set should work', () => {
 
@@ -209,26 +220,46 @@ describe('Focus', () => {
 
   })
 
+})
+
+describe('Focus Over', () => {
+
+  const { subscribe, L, view, over, set, focus } = createStore(state)
+
+  const userFocus = focus(L.user)
+  const userNameFocus = userFocus.focus(userFocus.L.name)
+  const userFirstNameFocus = userNameFocus.focus(userNameFocus.L.first)
 
 
+  it('Over should work', () => {
 
-  // Over
+    expect(userFirstNameFocus.over(firstname => firstname + 'Lol')).toBe('GabrielLol')
 
+    expect(
+      userFocus.over(
+        userFocus.L.name,
+        name => ({ ...name, nickname: 'Gab' })
+      )
+    ).toEqual({
+      ...state.user,
+      name: {
+        ...state.user.name,
+        first: 'GabrielLol',
+        nickname: 'Gab'
+      }
+    })
 
+  })
 
-  // userFirstNameFocus.over((firstname) => firstname + 'Lol')
+})
 
-  // userFocus.over((v) => v.name + 1)
-  // userFocus.over(userFocus.name, (v) => v + 1)
-  //
-  // userFocus.set({ name: 'lol' })
-  // userFocus.set(userFocus.name, 'lol')
-  //
-  //
-  //
-  // const usernameFocus = userFocus.focus(userFocus.name.lens)
-  // console.log(usernameFocus.view()) // etc
+describe('Focus Subscribe', () => {
 
+  const { subscribe, L, view, over, set, focus } = createStore(state)
+
+  const userFocus = focus(L.user)
+  const userNameFocus = userFocus.focus(userFocus.L.name)
+  const userFirstNameFocus = userNameFocus.focus(userNameFocus.L.first)
 
   it('Subscribe', () => {
 
@@ -238,8 +269,8 @@ describe('Focus', () => {
     subscribe(state => stateUpdateCount++)
     userFirstNameFocus.subscribe(userFirstName => nameUpdateCount++)
 
-    set(L.user.L.name.L.last, 'Test')
-    set(L.user.L.name.L.first, 'Test')
+    set(L.user.name.last, 'Test')
+    set(L.user.name.first, 'Test')
 
     expect(stateUpdateCount).toBe(2)
     expect(nameUpdateCount).toBe(1)

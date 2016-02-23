@@ -1,5 +1,5 @@
 import { compose } from 'ramda'
-import { makeLenses, immutableLens, propLens, view, over, set, num } from '../src/Lens'
+import { makeLenses, immutableLens, identityLens, propLens, view, over, set, num } from '../src/Lens'
 import { Map } from 'immutable'
 import expect from 'expect'
 
@@ -25,6 +25,18 @@ describe('View', () => {
   it('should read the value', () => {
 
     expect(view(L.name, user)).toBe('Gabriel')
+
+  })
+
+  it('identityLens should read the complete structure', () => {
+
+    expect(view(identityLens, user)).toEqual(user)
+
+  })
+
+  it('identityLens should compose', () => {
+
+    expect(view(compose(identityLens, L.name), user)).toEqual('Gabriel')
 
   })
 

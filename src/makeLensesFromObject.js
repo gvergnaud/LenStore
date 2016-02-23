@@ -6,17 +6,13 @@ const makeLensesFromObject = (obj, parentKeys = []) => Object.keys(obj).reduce((
   const lens = composePropLenses(...lensKeys)
   const value = obj[key]
 
-  acc[key] = lens
-
-  if (typeof value === 'object') {
-    acc[key].L = makeLensesFromObject(value, lensKeys)
-  }
-
-  if (Array.isArray(value)) {
-    acc[key].num = (index) => acc[key].L[index]
+  acc[key] = {
+    ...(typeof value === 'object' ? makeLensesFromObject(value, lensKeys) : {}),
+    ...(Array.isArray(value) ? { num: index => acc[key][index] } : {}),
+    lens
   }
 
   return acc
-}, { self: identityLens })
+}, { lens: identityLens })
 
 export default makeLensesFromObject

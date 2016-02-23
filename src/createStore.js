@@ -24,26 +24,26 @@ export default function createStore(initialState) {
 
   const L = makeLensesFromObject(state)
 
-  const viewState = (lens) => view(lens, state)
-  const overState = (lens, f) => updateState(over(lens, f, state))
-  const setState = (lens, v) => overState(lens, () => v)
+  const viewState = ({ lens }) => view(lens, state)
+  const overState = ({ lens }, f) => updateState(over(lens, f, state))
+  const setState = (L, v) => overState(L, () => v)
 
   const store = { L, subscribe, view: viewState, over: overState, set: setState }
 
-  return createFocus(store)(L.self)
+  return createFocus(store)(L)
 }
 
 
-const createFocus = ({ L, subscribe, view, over, set }) => (rootLens) => {
+const createFocus = ({ L, subscribe, view, over, set }) => ({ lens: rootLens }) => {
 
   const currentFocus = {
 
-    L: makeLensesFromObject(view(rootLens)),
+    L: makeLensesFromObject(view({ lens: rootLens })),
 
     subscribe(listener) {
-      let prevValue = view(rootLens)
+      let prevValue = view({ lens: rootLens })
       return subscribe((state) => {
-        const value = view(rootLens)
+        const value = view({ lens: rootLens })
         if (!deepEqual(value, prevValue)) {
           listener(value)
           prevValue = value
@@ -51,33 +51,33 @@ const createFocus = ({ L, subscribe, view, over, set }) => (rootLens) => {
       })
     },
 
-    view(lens) {
-      return lens ? view(compose(rootLens, lens)) : view(rootLens)
+    view(L) {
+      return L ? view({ lens: compose(rootLens, L.lens) }) : view({ lens: rootLens })
     },
 
-    over(lens, f) {
+    over(L, f) {
       if (!f) {
-        f = lens
-        lens = null
+        f = L
+        L = null
       }
-      if (lens) over(compose(rootLens, lens), f)
-      else over(rootLens, f)
+      if (L) over({ lens: compose(rootLens, L.lens) }, f)
+      else over({ lens: rootLens }, f)
       return currentFocus.view()
     },
 
-    set(lens, v) {
+    set(L, v) {
       if (!v) {
-        v = lens
-        lens = null
+        v = L
+        L = null
       }
-      if (lens) set(compose(rootLens, lens), v)
-      else set(rootLens, v)
+      if (L) set({ lens: compose(rootLens, L.lens) }, v)
+      else set({ lens: rootLens }, v)
       return currentFocus.view()
     },
 
 
-    focus(lens) {
-      return createFocus(currentFocus)(lens)
+    focus(L) {
+      return createFocus(currentFocus)(L)
     }
 
   }
