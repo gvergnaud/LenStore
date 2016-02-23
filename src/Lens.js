@@ -12,13 +12,13 @@ import Identity, { runIdentity } from './functors/Identity'
 
 // lens :: Getter -> Setter -> Key -> Functor f -> Object
 export const lens = curry((getter, setter, key, f, obj) =>
-  f(getter(key, obj)).map(value => setter(key, value, obj))
+  map( value => setter(key, value, obj), f(getter(key, obj)) )
 )
 
 // identityLens :: Functor f -> a -> f a
 export const identityLens = lens(
   (key, obj) => obj,
-  (key, value, obj) => obj,
+  (key, value, obj) => value,
   '_' // no key needed
 )
 
@@ -29,7 +29,7 @@ export const propLens = lens(
   (key, value, obj) => ({ ...obj, [key]: value })
 )
 
-// immutableLens :: Key -> Functor f -> Map -> f Map
+// immutableLens :: Key -> Functor f -> x -> f x
 export const immutableLens = lens(
   (key, x) => x.get(key),
   (key, value, x) => x.set(key, value)

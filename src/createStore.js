@@ -28,52 +28,60 @@ export default function createStore(initialState) {
   const overState = (lens, f) => updateState(over(lens, f, state))
   const setState = (lens, v) => overState(lens, () => v)
 
-
   const store = { L, subscribe, view: viewState, over: overState, set: setState }
-  store.focus = createFocus(store)
 
-  return store
+  return createFocus(store)(L.self)
 }
 
 
-const createFocus = ({ L, subscribe, view, over, set }) => (rootLens) => ({
+const createFocus = ({ L, subscribe, view, over, set }) => (rootLens) => {
 
-  L: makeLensesFromObject(view(rootLens)),
+  const currentFocus = {
 
-  subscribe(listener) {
-    let prevValue = view(rootLens)
-    return subscribe((state) => {
-      const value = view(rootLens)
-      if (!deepEqual(value, prevValue)) {
-        listener(value)
-        prevValue = value
+    L: makeLensesFromObject(view(rootLens)),
+
+    subscribe(listener) {
+      let prevValue = view(rootLens)
+      return subscribe((state) => {
+        const value = view(rootLens)
+        if (!deepEqual(value, prevValue)) {
+          listener(value)
+          prevValue = value
+        }
+      })
+    },
+
+    view(lens) {
+      return lens ? view(compose(rootLens, lens)) : view(rootLens)
+    },
+
+    over(lens, f) {
+      if (!f) {
+        f = lens
+        lens = null
       }
-    })
-  },
+      if (lens) over(compose(rootLens, lens), f)
+      else over(rootLens, f)
+      return currentFocus.view()
+    },
 
-  view(lens) {
-    return lens ? view(compose(rootLens, lens)) : view(rootLens)
-  },
+    set(lens, v) {
+      if (!v) {
+        v = lens
+        lens = null
+      }
+      if (lens) set(compose(rootLens, lens), v)
+      else set(rootLens, v)
+      return currentFocus.view()
+    },
 
-  over(lens, f) {
-    if (!f) {
-      f = lens
-      lens = null
+
+    focus(lens) {
+      return createFocus(currentFocus)(lens)
     }
-    return lens ? over(compose(rootLens, lens), f) : over(rootLens, f)
-  },
 
-  set(lens, v) {
-    if (!v) {
-      v = lens
-      lens = null
-    }
-    return lens ? set(compose(rootLens, lens), v) : set(rootLens, v)
-  },
-
-
-  focus(lens) {
-    return createFocus(this)(lens)
   }
 
-})
+  return currentFocus
+
+}

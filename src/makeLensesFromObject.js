@@ -9,7 +9,7 @@ const makeLensesFromObject = (obj, parentKeys = []) => Object.keys(obj).reduce((
   acc[key] = lens
 
   if (typeof value === 'object') {
-      acc[key].L = makeLensesFromObject(value, lensKeys)
+    acc[key].L = makeLensesFromObject(value, lensKeys)
   }
 
   if (Array.isArray(value)) {

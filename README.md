@@ -46,3 +46,35 @@ userStore = createStore({
 
   store.init(initialState)
   ```
+
+
+
+New Target API :
+
+Use just like a regular object :
+
+```js
+
+const state = {
+  user: {
+    username: 'toto',
+    age: 22
+  },
+  bookmark: ['The Knick', 'Breaking Bad', 'True Detective']
+}
+
+
+// createStore :: InitialState -> Observable State
+
+const store = createStore(state)
+
+store.subscribe(state => {
+  console.log(state)
+})
+
+
+const { L, view, over, set } = store
+view(L.user.username)
+over(L.user.username, username => `${username}!!`)
+set(L.user.username, 'Henry')
+```
