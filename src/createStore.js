@@ -24,26 +24,33 @@ export default function createStore(initialState) {
 
   const L = makeLensesFromObject(state)
 
-  const viewState = ({ lens }) => view(lens, state)
-  const overState = ({ lens }, f) => updateState(over(lens, f, state))
-  const setState = (L, v) => overState(L, () => v)
+  const viewState = (lens) => view(lens, state)
+  const overState = (lens, f) => updateState(over(lens, f, state))
+  const setState = (lens, v) => overState(lens, () => v)
 
-  const store = { L, subscribe, view: viewState, over: overState, set: setState }
+  const store = {
+    L,
+    subscribe,
+    view: L => viewState(L.lens),
+    over: (L, f) => overState(L.lens, f),
+    set: (L, v) => setState(L.lens, v)
+  }
 
   return createFocus(store)(L)
 }
 
+const composeL = (L1, L2) => ({ lens: compose(L1.lens, L2.lens) })
 
-const createFocus = ({ L, subscribe, view, over, set }) => ({ lens: rootLens }) => {
+const createFocus = ({ L, subscribe, view, over, set }) => (rootL) => {
 
   const currentFocus = {
 
-    L: makeLensesFromObject(view({ lens: rootLens })),
+    L: makeLensesFromObject(view(rootL)),
 
     subscribe(listener) {
-      let prevValue = view({ lens: rootLens })
+      let prevValue = view(rootL)
       return subscribe((state) => {
-        const value = view({ lens: rootLens })
+        const value = view(rootL)
         if (!deepEqual(value, prevValue)) {
           listener(value)
           prevValue = value
@@ -52,7 +59,7 @@ const createFocus = ({ L, subscribe, view, over, set }) => ({ lens: rootLens })
     },
 
     view(L) {
-      return L ? view({ lens: compose(rootLens, L.lens) }) : view({ lens: rootLens })
+      return L ? view(composeL(rootL, L)) : view(rootL)
     },
 
     over(L, f) {
@@ -60,8 +67,8 @@ const createFocus = ({ L, subscribe, view, over, set }) => ({ lens: rootLens })
         f = L
         L = null
       }
-      if (L) over({ lens: compose(rootLens, L.lens) }, f)
-      else over({ lens: rootLens }, f)
+      if (L) over(composeL(rootL, L), f)
+      else over(rootL, f)
       return currentFocus.view()
     },
 
@@ -70,8 +77,8 @@ const createFocus = ({ L, subscribe, view, over, set }) => ({ lens: rootLens })
         v = L
         L = null
       }
-      if (L) set({ lens: compose(rootLens, L.lens) }, v)
-      else set({ lens: rootLens }, v)
+      if (L) set(composeL(rootL, L), v)
+      else set(rootL, v)
       return currentFocus.view()
     },
 
